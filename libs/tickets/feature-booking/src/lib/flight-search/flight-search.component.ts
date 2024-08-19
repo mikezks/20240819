@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { Component, inject, signal } from '@angular/core';
+import { NonNullableFormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { CityPipe } from '@flight-demo/shared/ui-common';
 import { Flight, FlightService } from '@flight-demo/tickets/domain';
 import { FlightCardComponent } from '../flight-card/flight-card.component';
@@ -10,24 +10,30 @@ import { FlightCardComponent } from '../flight-card/flight-card.component';
   standalone: true,
   templateUrl: './flight-search.component.html',
   styleUrls: ['./flight-search.component.css'],
-  imports: [CommonModule, FormsModule, CityPipe, FlightCardComponent],
+  imports: [CommonModule, ReactiveFormsModule, CityPipe, FlightCardComponent],
 })
 export class FlightSearchComponent {
   private flightService = inject(FlightService);
 
-  from = 'Paris';
-  to = 'London';
-  flights: Array<Flight> = [];
+  filterForm = inject(NonNullableFormBuilder).group({
+    from: ['Paris'],
+    to: ['London']
+  });
 
-  basket: Record<number, boolean> = {
+  flights = signal<Flight[]>([]);
+
+  basket = signal<Record<number, boolean>>({
     3: true,
     5: true,
-  };
+  });
 
   search(): void {
-    this.flightService.find(this.from, this.to).subscribe({
+    this.flightService.find(
+      this.filterForm.controls.from.value,
+      this.filterForm.controls.to.value
+    ).subscribe({
       next: (flights) => {
-        this.flights = flights;
+        this.flights.set(flights);
       },
       error: (errResp) => {
         console.error('Error loading flights', errResp);
@@ -36,21 +42,23 @@ export class FlightSearchComponent {
   }
 
   delay(): void {
-    this.flights = this.toFlightsWithDelays(this.flights, 15);
+    if (this.flights().length) {
+      this.flights.update((flights) => {
+        const oldFlight = flights[0];
+        const oldDate = new Date(oldFlight.date);
+
+        const newDate = new Date(oldDate.getTime() + 1000 * 60 * 15);
+        const newFlight: Flight = { ...oldFlight, date: newDate.toISOString() };
+
+        return [newFlight, ...flights.slice(1)];
+      });
+    }
   }
 
-  toFlightsWithDelays(flights: Flight[], delay: number): Flight[] {
-    if (flights.length === 0) {
-      return [];
-    }
-
-    const oldFlights = flights;
-    const oldFlight = oldFlights[0];
-    const oldDate = new Date(oldFlight.date);
-    const newDate = new Date(oldDate.getTime() + 1000 * 60 * delay);
-
-    const newFlight = { ...oldFlight, date: newDate.toISOString() };
-
-    return [newFlight, ...flights.slice(1)];
+  updateBasket(flightId: number, selected: boolean): void {
+    this.basket.update((basket) => ({
+      ...basket,
+      [flightId]: selected,
+    }));
   }
 }
