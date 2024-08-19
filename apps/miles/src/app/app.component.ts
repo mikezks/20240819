@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import { AuthService } from './../../../../libs/shared/util-auth/src/lib/auth.service';
+import { Component, inject } from '@angular/core';
 import { RouterModule } from '@angular/router';
 
 @Component({
@@ -10,6 +11,13 @@ import { RouterModule } from '@angular/router';
 })
 export class AppComponent {
   title = 'miles';
+  authService = inject(AuthService);
+
+  constructor() {
+    this.authService.userName.subscribe((userName) => {
+      console.log('userName', userName);
+    });
+  }
 }
 
 export default AppComponent;
