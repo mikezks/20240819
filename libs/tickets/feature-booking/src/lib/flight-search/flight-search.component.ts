@@ -1,9 +1,9 @@
-import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { FlightCardComponent } from '../flight-card/flight-card.component';
 import { CityPipe } from '@flight-demo/shared/ui-common';
 import { Flight, FlightService } from '@flight-demo/tickets/domain';
+import { FlightCardComponent } from '../flight-card/flight-card.component';
 
 @Component({
   selector: 'app-flight-search',
@@ -13,26 +13,18 @@ import { Flight, FlightService } from '@flight-demo/tickets/domain';
   imports: [CommonModule, FormsModule, CityPipe, FlightCardComponent],
 })
 export class FlightSearchComponent {
-  from = 'London';
-  to = 'New York';
+  private flightService = inject(FlightService);
+
+  from = 'Paris';
+  to = 'London';
   flights: Array<Flight> = [];
-  selectedFlight: Flight | undefined;
 
   basket: Record<number, boolean> = {
     3: true,
     5: true,
   };
 
-  private flightService = inject(FlightService);
-
   search(): void {
-    if (!this.from || !this.to) {
-      return;
-    }
-
-    // Reset properties
-    this.selectedFlight = undefined;
-
     this.flightService.find(this.from, this.to).subscribe({
       next: (flights) => {
         this.flights = flights;
@@ -43,7 +35,22 @@ export class FlightSearchComponent {
     });
   }
 
-  select(f: Flight): void {
-    this.selectedFlight = { ...f };
+  delay(): void {
+    this.flights = this.toFlightsWithDelays(this.flights, 15);
+  }
+
+  toFlightsWithDelays(flights: Flight[], delay: number): Flight[] {
+    if (flights.length === 0) {
+      return [];
+    }
+
+    const oldFlights = flights;
+    const oldFlight = oldFlights[0];
+    const oldDate = new Date(oldFlight.date);
+    const newDate = new Date(oldDate.getTime() + 1000 * 60 * delay);
+
+    const newFlight = { ...oldFlight, date: newDate.toISOString() };
+
+    return [newFlight, ...flights.slice(1)];
   }
 }
