@@ -1,9 +1,11 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { CityPipe } from '@flight-demo/shared/ui-common';
 import { Flight, FlightService } from '@flight-demo/tickets/domain';
 import { FlightCardComponent } from '../flight-card/flight-card.component';
+import { debounceTime } from 'rxjs';
 
 @Component({
   selector: 'app-flight-search',
@@ -15,19 +17,59 @@ import { FlightCardComponent } from '../flight-card/flight-card.component';
 export class FlightSearchComponent {
   private flightService = inject(FlightService);
 
-  from = 'Paris';
-  to = 'London';
-  flights: Array<Flight> = [];
+  from = signal('Paris');
+  to = signal('London');
+  lazyFrom$ = toObservable(this.from).pipe(
+    debounceTime(1_000)
+  );
+  lazyFrom = toSignal(this.lazyFrom$, {
+    initialValue: this.from()
+  });
 
-  basket: Record<number, boolean> = {
+  flights = signal<Array<Flight>>([]);
+  flightRoute = computed(
+    () => 'From ' + this.lazyFrom() + ' to ' + this.to() + '.'
+  );
+
+  basket = signal<Record<number, boolean>>({
     3: true,
     5: true,
-  };
+  });
+
+  constructor() {
+    effect(() => console.log(this.flightRoute()));
+
+    console.log(this.to());
+    this.to.set('Madrid');
+    console.log(this.to());
+    this.to.set('Rome');
+    console.log(this.to());
+    this.to.set('Oslo');
+    console.log(this.to());
+    this.to.set('San Francisco');
+    console.log(this.to());
+
+    const counter = signal(0);
+    const isEven = computed(() => counter() % 2 ? false : true);
+
+    // counter: 0
+    // isEven: true
+    // counter.set(1)
+    // counter: 1
+    // (isEven: true) --> would be a combineLatest event in RxJS, but the effect will not trigger
+    // isEven: false
+    // counter.set(2)
+    // counter: 2
+    // (isEven: false) --> would be a combineLatest event in RxJS, but the effect will not trigger
+    // isEven: true
+    // => Signals are Glitch-free
+
+  }
 
   search(): void {
-    this.flightService.find(this.from, this.to).subscribe({
+    this.flightService.find(this.from(), this.to()).subscribe({
       next: (flights) => {
-        this.flights = flights;
+        this.flights.set(flights);
       },
       error: (errResp) => {
         console.error('Error loading flights', errResp);
@@ -36,7 +78,7 @@ export class FlightSearchComponent {
   }
 
   delay(): void {
-    this.flights = this.toFlightsWithDelays(this.flights, 15);
+    this.flights.set(this.toFlightsWithDelays(this.flights(), 15));
   }
 
   toFlightsWithDelays(flights: Flight[], delay: number): Flight[] {
@@ -52,5 +94,12 @@ export class FlightSearchComponent {
     const newFlight = { ...oldFlight, date: newDate.toISOString() };
 
     return [newFlight, ...flights.slice(1)];
+  }
+
+  updateBasket(flightId: number, selected: boolean): void {
+    this.basket.update((basket) => ({
+      ...basket,
+      [flightId]: selected,
+    }));
   }
 }
