@@ -9,6 +9,8 @@ import {
 } from '@angular/router';
 import { AppComponent } from './app/app.component';
 import { APP_ROUTES } from './app/app.routes';
+import { provideStore } from '@ngrx/store';
+import { provideStoreDevtools } from '@ngrx/store-devtools';
 
 bootstrapApplication(AppComponent, {
   providers: [
@@ -18,5 +20,7 @@ bootstrapApplication(AppComponent, {
       // withPreloading(PreloadAllModules),
     ),
     importProvidersFrom(MatDialogModule),
+    provideStore(),
+    provideStoreDevtools()
   ],
 });

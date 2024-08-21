@@ -2,7 +2,8 @@ import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CityPipe } from '@flight-demo/shared/ui-common';
-import { Flight, FlightService } from '@flight-demo/tickets/domain';
+import { Flight, ticketActions, ticketFeature } from '@flight-demo/tickets/domain';
+import { Store } from '@ngrx/store';
 import { FlightCardComponent } from '../flight-card/flight-card.component';
 
 @Component({
@@ -13,11 +14,11 @@ import { FlightCardComponent } from '../flight-card/flight-card.component';
   imports: [CommonModule, FormsModule, CityPipe, FlightCardComponent],
 })
 export class FlightSearchComponent {
-  private flightService = inject(FlightService);
+  private store = inject(Store);
 
   from = 'Paris';
   to = 'London';
-  flights: Array<Flight> = [];
+  flights$ = this.store.select(ticketFeature.selectFlights);
 
   basket: Record<number, boolean> = {
     3: true,
@@ -25,18 +26,13 @@ export class FlightSearchComponent {
   };
 
   search(): void {
-    this.flightService.find(this.from, this.to).subscribe({
-      next: (flights) => {
-        this.flights = flights;
-      },
-      error: (errResp) => {
-        console.error('Error loading flights', errResp);
-      },
-    });
+    this.store.dispatch(
+      ticketActions.filterUpdated({ from: this.from, to: this.to, urgent: false })
+    );
   }
 
   delay(): void {
-    this.flights = this.toFlightsWithDelays(this.flights, 15);
+    // this.flights = this.toFlightsWithDelays(this.flights, 15);
   }
 
   toFlightsWithDelays(flights: Flight[], delay: number): Flight[] {
