@@ -18,7 +18,7 @@ export class FlightSearchComponent {
 
   from = 'Paris';
   to = 'London';
-  flights = this.store.selectSignal(ticketFeature.selectFlights);
+  flights = this.store.selectSignal(ticketFeature.selectDelayedFlights);
 
   basket: Record<number, boolean> = {
     3: true,

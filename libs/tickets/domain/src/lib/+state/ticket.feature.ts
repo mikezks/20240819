@@ -1,4 +1,4 @@
-import { createFeature, createReducer, on } from '@ngrx/store';
+import { createFeature, createReducer, createSelector, on } from '@ngrx/store';
 import { initialTicketState } from './ticket.model';
 import { ticketActions } from './ticket.actions';
 
@@ -12,5 +12,15 @@ export const ticketFeature = createFeature({
       const flights = action.flights;
       return { ...state, flights };
     })
-  )
+  ),
+  extraSelectors: state => ({
+    selectDelayedFlights: createSelector(
+      // Selectors
+      state.selectFlights,
+      // Projector
+      flights => flights.filter(
+        flight => flight.delayed
+      )
+    )
+  })
 });
