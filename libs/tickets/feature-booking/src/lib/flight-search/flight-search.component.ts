@@ -44,15 +44,13 @@ export class FlightSearchComponent {
 
   delay(): void {
     if (this.flights().length) {
-      /* this.flights.update((flights) => {
-        const oldFlight = flights[0];
-        const oldDate = new Date(oldFlight.date);
+      const oldFlight = this.flights()[0];
+      const oldDate = new Date(oldFlight.date);
 
-        const newDate = new Date(oldDate.getTime() + 1000 * 60 * 15);
-        const newFlight: Flight = { ...oldFlight, date: newDate.toISOString() };
+      const newDate = new Date(oldDate.getTime() + 1000 * 60 * 15);
+      const newFlight: Flight = { ...oldFlight, date: newDate.toISOString() };
 
-        return [newFlight, ...flights.slice(1)];
-      }); */
+      this.store.addFlights([newFlight, ...this.flights().slice(1)]);
     }
   }
 
