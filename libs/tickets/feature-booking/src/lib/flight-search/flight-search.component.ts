@@ -1,11 +1,12 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, effect, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, Injector, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { CityPipe } from '@flight-demo/shared/ui-common';
 import { Flight, FlightService } from '@flight-demo/tickets/domain';
 import { FlightCardComponent } from '../flight-card/flight-card.component';
 import { debounceTime } from 'rxjs';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-flight-search',
@@ -15,6 +16,7 @@ import { debounceTime } from 'rxjs';
   imports: [CommonModule, FormsModule, CityPipe, FlightCardComponent],
 })
 export class FlightSearchComponent {
+  private injector = inject(Injector);
   private flightService = inject(FlightService);
 
   from = signal('Paris');
@@ -67,6 +69,12 @@ export class FlightSearchComponent {
   }
 
   search(): void {
+    effect(() => console.log(this.flightRoute()), {
+      injector: this.injector
+    });
+
+    this.injector.get(Router);
+
     this.flightService.find(this.from(), this.to()).subscribe({
       next: (flights) => {
         this.flights.set(flights);
